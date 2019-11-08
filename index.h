@@ -35,31 +35,6 @@ p {
     -webkit-user-select: none;
     -ms-user-select: none;
   }
-
-  /* Data Table Styling */
-  #dataTable {
-    font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
-    border-collapse: collapse;
-    width: 100%;
-  }
-
-  #dataTable td, #dataTable th {
-    border: 1px solid #ddd;
-    padding: 8px;
-  }
-
-  #dataTable tr:nth-child(even){background-color: #f2f2f2;}
-
-  #dataTable tr:hover {background-color: #ddd;}
-
-  #dataTable th {
-    padding-top: 12px;
-    padding-bottom: 12px;
-    text-align: left;
-    background-color: #4CAF50;
-    color: white;
-  }
-
 #border {
   border: 5px outset #1C6EA4;
   border-radius: 25px 25px 25px 25px;
@@ -97,10 +72,12 @@ p {
         <button  type="button" >Reset</button>
         <div>
           <h3> Set Timer1 On </h3>
-          <input type="text" name=""/> 
-          <input type="text" name=""/> 
-          <input type="text" name=""/>
-          <button  type="button" >Set</button>
+          <input type="time" id="timer1"/> 
+          <button  
+          type="button" 
+          onclick="SendTimer1()">
+          Set
+        </button>
         </div>
         <div>
           <h3> Set Timer1 Off </h3>
@@ -164,6 +141,17 @@ p {
     </div>
 <br>
 <br>  
+
+<script>
+  function SendTimer1() {
+    var Timer1 = document.getElementById("timer1").value;
+    console.log(Timer1);
+    var xhttp = new XMLHttpRequest();
+    xhttp.open("GET","setTimer1",true);
+    xhttp.send(Timer1);
+  }
+  </script>
+
 <script>
 //Graphs visit: https://www.chartjs.org
 var values = [];
@@ -211,6 +199,8 @@ function showGraph(){
 window.onload = function() {
   console.log(new Date().toLocaleTimeString());
   showGraph(5,10,4,58);
+  getLED1();
+  setTimeout(getLED2,7000);
 };
 
 </script>
@@ -244,7 +234,33 @@ function sendData2(led) {
 setInterval(function() {
   // Call a function repetatively with 2 Second interval
   getData();
-}, 2000); //2000mSeconds update rate
+}, 5000); //2000mSeconds update rate
+
+function getLED1() {
+  console.log("Get LED1 From DB");
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    console.log("LED1 readyState: "+this.readyState+" Status: "+this.status)
+    if (this.readyState == 4 && this.status == 200) {
+      document.getElementById("LEDState1").innerHTML = this.responseText;
+    }
+  };
+  xhttp.open("GET", "getLED1", true);
+  xhttp.send();
+}
+
+function getLED2() {
+  console.log("Get LED2 From DB");
+  var LED2 = new XMLHttpRequest();
+  LED2.onreadystatechange = function() {
+    console.log("LED2 readyState: "+this.readyState+" Status: "+this.status)
+    if (this.readyState == 4 && this.status == 200) {
+      document.getElementById("LEDState2").innerHTML = this.responseText;
+    }
+  };
+  LED2.open("GET", "getLED2", true);
+  LED2.send();
+}
 
 function getData() {
   var xhttp = new XMLHttpRequest();
