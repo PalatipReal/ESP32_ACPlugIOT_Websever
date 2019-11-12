@@ -60,22 +60,20 @@ p {
       <h3>
         Timer1 : 
         <h4> [On]
-          Hour: <span id="Get_Timer1_On_Hour"/>
+            Hour: <span id="Get_Timer1_On_Hour"/>
             Min : <span id="Get_Timer1_On_Min"/>
-            Sec : <span id="Get_Timer1_On_Sec"/>
         </h4>
         <h4> [Off] 
-          Hour: <span id="Get_Timer1_Off_Hour"/>
+            Hour: <span id="Get_Timer1_Off_Hour"/>
             Min : <span id="Get_Timer1_Off_Min"/>
-            Sec : <span id="Get_Timer1_Off_Sec"/>
         </h4>
         <button  type="button" >Reset</button>
         <div>
           <h3> Set Timer1 On </h3>
-          <input type="time" id="timer1"/> 
+          <input type="time" id="timer1" /> 
           <button  
           type="button" 
-          onclick="SendTimer1()">
+          onclick="SendTimer1On()">
           Set
         </button>
         </div>
@@ -83,51 +81,13 @@ p {
           <h3> Set Timer1 Off </h3>
           <input type="text" name=""/> 
           <input type="text" name=""/> 
-          <input type="text" name=""/>
-          <button  type="button" >Set</button>
+          <button  type="button" onclick="SendTimer1Off()">
+            Set
+          </button>
         </div>
       </h3>
     </div>
   </div>
-
-</div>
-<div id="border" >
-  <h2> Relay 2</h2>
-  <button  type="button" onclick="sendData2(1)">LED ON</button>
-  <button  type="button" onclick="sendData2(0)">LED OFF</button><BR>
-  <h3>Relay 2 State is : <span id="LEDState2">NA</span> </h3>
-
-    <div id="border2">
-      <h3>
-        Timer2 : 
-        <h4> [On]
-          Hour: <span id="Get_Timer2_On_Hour"/>
-            Min : <span id="Get_Timer2_On_Min"/>
-            Sec : <span id="Get_Timer2_On_Sec"/>
-        </h4>
-        <h4> [Off] 
-          Hour: <span id="Get_Timer2_Off_Hour"/>
-            Min : <span id="Get_Timer2_Off_Min"/>
-            Sec : <span id="Get_Timer2_Off_Sec"/>
-        </h4>
-        <button  type="button" >Reset</button>
-        <div>
-          <h3> Set Timer2 On </h3>
-          <input type="text" name=""/> 
-          <input type="text" name=""/> 
-          <input type="text" name=""/>
-          <button  type="button" >Set</button>
-        </div>
-        <div>
-          <h3> Set Timer2 Off </h3>
-          <input type="text" name=""/> 
-          <input type="text" name=""/> 
-          <input type="text" name=""/>
-          <button  type="button" >Set</button>
-        </div>
-      </h3>
-    </div>
-
 </div>
 <div>
   <br>
@@ -143,13 +103,34 @@ p {
 <br>  
 
 <script>
-  function SendTimer1() {
-    var Timer1 = document.getElementById("timer1").value;
-    console.log(Timer1);
-    var xhttp = new XMLHttpRequest();
-    xhttp.open("GET","setTimer1",true);
-    xhttp.send(Timer1);
+function SendTimer1On() {
+    var Timer = document.getElementById("timer1").value;
+    if(Timer != ""){
+      var arr = Timer.split(':');
+      var h = parseInt(arr[0]);
+      var m = parseInt(arr[1]);
+      console.log(Timer);
+      SendTimer1OnHour(h);
+      SendTimer1OnMin(m);
+    }
+    else {
+      alert("Input TimerOn is Validation");
+    }
   }
+  function SendTimer1OnHour(h) {
+    console.log(h);
+    var xhttp = new XMLHttpRequest();
+    xhttp.open("POST","setTimer1OnHour",true);
+    xhttp.send(h);
+  }
+    function SendTimer1OnMin(m) {
+      console.log(m); 
+    var xhttp = new XMLHttpRequest();
+    xhttp.open("POST","setTimer1OnMin",true);
+    xhttp.send(m);
+  }
+
+  
   </script>
 
 <script>
@@ -200,7 +181,6 @@ window.onload = function() {
   console.log(new Date().toLocaleTimeString());
   showGraph(5,10,4,58);
   getLED1();
-  setTimeout(getLED2,7000);
 };
 
 </script>
@@ -220,17 +200,7 @@ function sendData1(led) {
     xhttp.open("GET","setLED1?LEDstate1="+led, true);
     xhttp.send();
 }
-function sendData2(led) {
-    var xhttp = new XMLHttpRequest();
-    xhttp.onreadystatechange = function() {
-      if (this.readyState == 4 && this.status == 200) {
-        document.getElementById("LEDState2").innerHTML =
-        this.responseText;
-      }
-    };
-    xhttp.open("GET","setLED2?LEDstate2="+led, true);
-    xhttp.send();
-}
+
 setInterval(function() {
   // Call a function repetatively with 2 Second interval
   getData();
@@ -249,18 +219,6 @@ function getLED1() {
   xhttp.send();
 }
 
-function getLED2() {
-  console.log("Get LED2 From DB");
-  var LED2 = new XMLHttpRequest();
-  LED2.onreadystatechange = function() {
-    console.log("LED2 readyState: "+this.readyState+" Status: "+this.status)
-    if (this.readyState == 4 && this.status == 200) {
-      document.getElementById("LEDState2").innerHTML = this.responseText;
-    }
-  };
-  LED2.open("GET", "getLED2", true);
-  LED2.send();
-}
 
 function getData() {
   var xhttp = new XMLHttpRequest();

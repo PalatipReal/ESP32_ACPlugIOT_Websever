@@ -14,19 +14,21 @@
 //   Include Index.h For Web Page
 //===============================================================
 #define LED 2
-#define LED2 3
 String ledState1 = "OFF";
-String ledState2 = "OFF";
 String Relay1 = "" ;
-String Relay2 = "" ;
+uint8_t Hour = 0 ;
+uint8_t Min = 0 ;
 #include "index.h"  //Web page header file
 //===============================================================
-//  Include PCF8591 For Read Analog From Acs712
+//  Include ACS712 For Read Analog From Acs712
 //===============================================================
-#include "PCF8591.h"
-#define PCF8591_I2C_ADDRESS 0x48
-PCF8591 pcf8591(PCF8591_I2C_ADDRESS);
-String Asc712_ADC = "0";
+#include "ACS712.h"
+String Amp    = "0" ;
+String Watt   = "0" ;
+//===============================================================
+//  Include AMC
+//===============================================================
+#include "AMC.h"
 //===============================================================
 //  Include Wire,Adafruit_GFX For OLED
 //===============================================================
@@ -56,10 +58,10 @@ bool LED2status = LOW;
 //const char* password   = "C0mputinG";
 //const char* ssid       = "iot-lab";
 //const char* password   = "computing";
-//const char* ssid       = "Renat";
-//const char* password   = "nattapong2539nat";
-const char* ssid       = "KFC Free WiFi";
-const char* password   = "12345677";
+const char* ssid       = "Renat";
+const char* password   = "nattapong2539nat";
+//const char* ssid       = "KFC Free WiFi";
+//const char* password   = "12345677";
 //===============================================================
 //  TaskHandle 
 //===============================================================
@@ -77,13 +79,13 @@ void handleRoot() {
 // Read ADC and send to WebServer
 //===============================================================
 void handleADC() {
- server.send(200, "text/plane", Asc712_ADC); //Send ADC value only to client ajax request
+ server.send(200, "text/plane", Amp); //Send ADC value only to client ajax request
 }
 //===============================================================
 // Read LED1 From WebServer
 //===============================================================
 void handleLED1() {
- String t_state = server.arg("LEDstate1"); //Refer  xhttp.open("GET", "setLED?LEDstate="+led, true);
+ String t_state = server.arg("LEDstate1"); //Refer  xhttp.open("GET", "setLED?LEDstate1="+led, true);
  Serial.print("User Set ");
  Serial.print("Relay 1 :");
  Serial.println(t_state);
@@ -99,31 +101,9 @@ void handleLED1() {
   ledState1 = "OFF"; //Feedback parameter  
  }
  Relay1=ledState1;
- Firebase.setString(firebaseData2,"/Relay/Relay1", ledState1); // send Data to Firebase
  server.send(200, "text/plane", ledState1); //Send web page
-}
-//===============================================================
-// Read LED2 From WebServer
-//===============================================================
-void handleLED2() {
- String t_state = server.arg("LEDstate2"); //Refer  xhttp.open("GET", "setLED?LEDstate="+led, true);
- Serial.print("User Set ");
- Serial.print("Relay 2 :");
- Serial.println(t_state);
- Serial.println("");
- if(t_state == "1")
- {
-  digitalWrite(LED2,LOW); //LED ON
-  ledState2 = "ON"; //Feedback parameter
- }
- else
- {
-  digitalWrite(LED2,HIGH); //LED OFF
-  ledState2 = "OFF"; //Feedback parameter  
- }
- Relay2=ledState2;
- Firebase.setString(firebaseData2,"/Relay/Relay2", ledState2); // send Data to Firebase
- server.send(200, "text/plane", ledState2); //Send web page
+ Firebase.setString(firebaseData2,"/Relay/Relay1", ledState1); // send Data to Firebase
+
 }
 //===============================================================
 // Get Data from firebase and send to Webserver
@@ -149,31 +129,44 @@ void GetLED1(){ // Get Data From Firebase
 //===============================================================
 // Get Data from firebase and send to Webserver
 //===============================================================
-void GetLED2(){ // Get Data From Firebase 
-  if (Firebase.getString(firebaseData3,"/Relay/Relay2")) { // True if can find path
-    if (firebaseData3.dataType() == "string") {
-      Relay2 = firebaseData3.stringData();
-      Serial.print("Get Relay2 DB :");
-      Serial.println(Relay2);
-      server.send(200, "text/plane", Relay2);
-      if(Relay2== "ON"){
-        digitalWrite(LED2,LOW);
-        }
-      else{
-        digitalWrite(LED2,HIGH);
-        }
-    }
-  } else {
-    Serial.println(firebaseData3.errorReason());
-  }
-}
 //===============================================================
 // Read Timer1 From WebServer
 //===============================================================
-void handleTimer1(){
-  String Timer = server.arg(0); //Refer  xhttp.open("GET","getTimer1"+Timer1 ,true);
-  Serial.print("User Set Timer1:");
-  Serial.println(Timer);
+void handleTimer1OnHour(){
+  int Timer1OnHour = server.arg(0).toInt(); 
+  Serial.print("User Set Timer Hour:");
+  Serial.println(Timer1OnHour);
+  Firebase.setInt(firebaseData2,"/Timer/Timer1On/Hour", Timer1OnHour);
+  Firebase.setString(firebaseData2,"/Timer/Timer1On/State", "True");
+}
+void handleTimer1OnMin(){
+  int Timer1OnMin = server.arg(0).toInt(); 
+  Serial.print("User Set Timer1 Min:");
+  Serial.println(Timer1OnMin);
+  Firebase.setInt(firebaseData2,"/Timer/Timer1On/Min", Timer1OnMin);
+  Firebase.setString(firebaseData2,"/Timer/Timer1On/State", "True");
+}
+//===============================================================
+// Read Timer1 From FireBase
+//===============================================================
+void GetTimer1OnHour(){
+  if (Firebase.getInt(firebaseData3,"/Timer/Timer1On/Hour")) { // True if can find path
+    if (firebaseData3.dataType() == "int") {
+      Hour = firebaseData3.intData();
+      Serial.print("Get Timer1OnHour DB :");
+      Serial.println(Hour);
+    }
+  }
+
+}
+void GetTimer1OnMin(){
+  if (Firebase.getInt(firebaseData3,"/Timer/Timer1On/Min")) { // True if can find path
+    if (firebaseData3.dataType() == "int") {
+      Min = firebaseData3.intData();
+      Serial.print("Get Timer1OnMin DB :");
+      Serial.println(Min);
+    }
+  }
 }
 //===============================================================
 // Setup
@@ -182,7 +175,6 @@ void handleTimer1(){
 void setup(void){
   Serial.begin(115200);
   pinMode(LED,OUTPUT); 
-  pcf8591.begin(); 
   Serial.println();
   Serial.println("Booting Sketch...");
   
@@ -221,9 +213,10 @@ void setup(void){
   
   xTaskCreate(&ReadAsc712_Task, "ReadAsc712_Task", 1024, NULL, 1, &ReadAsc712_Task_Handle);
   xTaskCreate(&Webserver_Task, "Webserver_Task", 16384, NULL, 2, &Webserver_Task_Handle);
-  xTaskCreate(&DisplayOled_Task, "DisplayOled_Task", 8000, NULL, 3, &DisplayOled_Task_Handle);
+  //xTaskCreate(&DisplayOled_Task, "DisplayOled_Task", 8000, NULL, 3, &DisplayOled_Task_Handle);
   GetLED1();
-  GetLED2();
+  GetTimer1OnHour();
+  GetTimer1OnMin();
 }
 void loop(void){
 }
@@ -236,10 +229,11 @@ void Webserver_Task(void *p) {
   server.on("/", handleRoot);      //This is display page
   server.on("/readADC", handleADC);//To get update of ADC Value only
   server.on("/setLED1", handleLED1);
-  server.on("/setLED2", handleLED2);
   server.on("/getLED1", GetLED1); // get From DB
-  server.on("/getLED2", GetLED2); // get From DB
-  server.on("/setTimer1", handleTimer1); // get From Sever
+  server.on("/setTimer1OnHour", handleTimer1OnHour); // get From Sever
+  server.on("/setTimer1OnMin", handleTimer1OnMin); // get From Sever
+  server.on("/getTimer1OnHour", GetTimer1OnHour); // get From DB
+  server.on("/getTimer1OnMin", GetTimer1OnMin); // get From DB
   server.begin();                  //Start server
   Serial.println("HTTP server started");
   while (1) {
@@ -251,9 +245,12 @@ void Webserver_Task(void *p) {
 // ReadAsc712_Task 
 //===============================================================
 void ReadAsc712_Task(void *p) {
+  ACS712 Sensor(A0);
   Serial.println("Start ReadAsc712 Task");
+  Serial.print("ACS712 Calibrate...");
+  Serial.println(Sensor.ACS712_Calibrate());
   while (1) {
-    Asc712_ADC = String(pcf8591.analogRead(AIN0));
+    Amp = String(Sensor.GetCurrent());
     /*
     Lib ASC712 Here...
     *--- Conver adc-Amp , amp-watt 
@@ -270,7 +267,7 @@ void DisplayOled_Task(void *p) {
 //    display.setCursor(0,0);
 //    display.print("AC Plug IOT");
 //    display.display();
-  while (1) {
+  while (1) {/*
     display.setCursor(0,0);
     display.clearDisplay();
     display.setTextSize(1);
@@ -283,7 +280,7 @@ void DisplayOled_Task(void *p) {
     display.println(Relay1);
     display.print("Replay2:");
     display.println(Relay2);
-    display.display();
+    display.display();*/
     vTaskDelay(2000);
   }
 }
