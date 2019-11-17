@@ -5,15 +5,15 @@
 #define sensitivity 100
 class ACS712
 {
-    public:
-        ACS712(int pin);
-        double GetCurrent();
-        double GetWatt(double P);
-        //double GetVolt();
-        int ACS712_Calibrate();
-    private:
-        uint8_t _pin ;
-        int ZeroAsc714Calibrate = 0 ;
-        uint16_t acc = 0;
+  public:
+    ACS712(int pin);
+    double GetCurrent();
+    double GetWatt(double P);
+    //double GetVolt();
+    int ACS712_Calibrate();
+  private:
+    uint8_t _pin ;
+    int ZeroAsc714Calibrate = 0 ;
+    uint16_t acc = 0;
 };
 #endif
