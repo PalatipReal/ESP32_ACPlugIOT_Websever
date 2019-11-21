@@ -8,7 +8,7 @@ class ACS712
   public:
     ACS712(int pin);
     double GetCurrent();
-    double GetWatt(double P);
+    double GetWatt(double I);
     //double GetVolt();
     int ACS712_Calibrate();
   private:

@@ -88,7 +88,11 @@ p {
 </div>
 <div>
   <br>
-  ADC Value is : <span id="ADCValue">0</span><br>
+  Amp : <span id="AmpValue">0</span><br>
+  Watt : <span id="WattValue">0</span><br>
+  <button  type="button" onclick="SendACS712_Calibrate()">          
+    Calibrate Acs712
+  </button>
    
 </div>
 <div>
@@ -101,12 +105,19 @@ p {
 
 <script>
 
+function SendACS712_Calibrate() {
+    console.log("User set Calibrate Acs712");
+    var xhttp = new XMLHttpRequest();
+    xhttp.open("POST","setACS712_Calibrate",true);
+    xhttp.send();
+  }
+  
 function SendResetTimer() {
     console.log("User Reset Timer");
-    var xhttp = new XMLHttpRequest();
-    xhttp.open("POST","setResetTimer",true);
-    xhttp.send();
-    GetDataDB();
+    var xhttpReset = new XMLHttpRequest();
+    xhttpReset.open("POST","setResetTimer",true);
+    xhttpReset.send();
+    setTimeout(GetDataDB, 3000);
   }
 
 function GetDataDB() {
@@ -219,7 +230,6 @@ function showGraph(){
         options: {
             title: {
                     display: true,
-                    text: "ADC Voltage"
                 },
             maintainAspectRatio: false,
             elements: {
@@ -268,15 +278,13 @@ setInterval(function() {
 }, 5000); //2000mSeconds update rate
 
 function getData() {
-  var xhttp = new XMLHttpRequest();
-  xhttp.onreadystatechange = function() {
+  var xhttpAmp = new XMLHttpRequest();
+  xhttpAmp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
       var Sensor_Led = this.responseText;
       var OBJ_Sensor_Pin = JSON.parse(Sensor_Led);
-      console.log("Json Parse : ");
-      console.log(Sensor_Led);
-      console.log("OBJ_Sensor_Pin.Amp :"+OBJ_Sensor_Pin.Amp);
-      document.getElementById("ADCValue").innerHTML = OBJ_Sensor_Pin.Amp ;
+      document.getElementById("AmpValue").innerHTML = OBJ_Sensor_Pin.Amp ;
+      document.getElementById("WattValue").innerHTML = OBJ_Sensor_Pin.Watt ;
       var time = new Date().toLocaleTimeString();
       var ADCValue = OBJ_Sensor_Pin.Amp ; 
       values.push(ADCValue);
@@ -284,8 +292,8 @@ function getData() {
       showGraph();  //Update Graphs
     }
   };
-  xhttp.open("GET", "readADC", true);
-  xhttp.send();
+  xhttpAmp.open("GET", "readADC", true);
+  xhttpAmp.send();
 }
 </script>
 

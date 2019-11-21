@@ -14,23 +14,27 @@
 //   Include Index.h For Web Page
 //===============================================================
 #define LED 2
-String  ledState1       = "OFF" ;
-String  Relay1          = ""    ;
-String  Hour_Off        = ""    ;
-String  Min_Off         = ""    ;
-bool    AlarmOn         = false ;
-bool    AlarmOff        = false ;
-uint8_t Timer1OnHour    = 0     ;
-uint8_t Timer1OnMin     = 0     ;
-uint8_t Timer1OffHour   = 0     ;
-uint8_t Timer1OffMin    = 0     ;
+String  ledState1         = "OFF" ;
+String  Relay1            = ""    ;
+String  Hour_Off          = ""    ;
+String  Min_Off           = ""    ;
+bool    AlarmOn           = false ;
+bool    AlarmOff          = false ;
+bool    StateTaskAlarmOn  = false ;
+bool    StateTaskAlarmOff = false ;
+uint8_t Timer1OnHour      = 0     ;
+uint8_t Timer1OnMin       = 0     ;
+uint8_t Timer1OffHour     = 0     ;
+uint8_t Timer1OffMin      = 0     ;
 #include "index.h"  //Web page header file
 //===============================================================
 //  Include ACS712 For Read Analog From Acs712
 //===============================================================
 #include "ACS712.h"
-String  Amp    = "0" ;
+double  Amp_Double = 0.00 ;
+String  Amp_String    = "0" ;
 String  Watt   = "0" ;
+ACS712 Sensor(A0);
 //===============================================================
 //  Include AMC
 //===============================================================
@@ -66,10 +70,10 @@ bool LED2status = LOW;
 //const char* password   = "C0mputinG";
 //const char* ssid       = "iot-lab";
 //const char* password   = "computing";
-const char* ssid       = "Renat";
-const char* password   = "nattapong2539nat";
-//const char* ssid       = "KFC Free WiFi";
-//const char* password   = "12345677";
+//const char* ssid       = "Renat";
+//const char* password   = "nattapong2539nat";
+const char* ssid       = "KFC Free WiFi";
+const char* password   = "12345677";
 //===============================================================
 //  TaskHandle
 //===============================================================
@@ -89,8 +93,8 @@ void handleRoot() {
 // Read ADC and send to WebServer
 //===============================================================
 void handleADC() {
-  String SensorData_Led1 = "{\"Led1\":\"" + Relay1
-                           + "\", \"Amp\":\"" + Amp
+  String SensorData_Led1 = "{\"Watt\":\"" + Watt
+                           + "\", \"Amp\":\"" + Amp_String
                            + "\"}";
   server.send(200, "text/plane", SensorData_Led1); //Send ADC value only to client ajax request
 }
@@ -132,10 +136,16 @@ void handleResetTimer() {
   Firebase.setInt(firebaseData3, "/Timer/Timer1Off/Hour",  0);
   Firebase.setInt(firebaseData3, "/Timer/Timer1Off/Min",   0);
   delay(100);
-  vTaskSuspend(AlarmOn_Task_Handle);
-  vTaskSuspend(AlarmOff_Task_Handle);
-  vTaskDelete(AlarmOn_Task_Handle);
-  vTaskDelete(AlarmOff_Task_Handle);
+  if (StateTaskAlarmOn == true) {
+    vTaskSuspend(AlarmOn_Task_Handle);
+    vTaskDelete(AlarmOn_Task_Handle);
+    StateTaskAlarmOn = false ;
+  }
+  if (StateTaskAlarmOff == true) {
+    vTaskSuspend(AlarmOff_Task_Handle);
+    vTaskDelete(AlarmOff_Task_Handle);
+    StateTaskAlarmOff = false ;
+  }
   Serial.println("Delete Alarm Task");
 
 }
@@ -250,12 +260,21 @@ void GetStateAlarm() {
   }
   if (AlarmOn) {
     Serial.print("Set AlarmOn ");
+    StateTaskAlarmOn = true ;
     xTaskCreate(&AlarmOn_Task, "Alarm_Task", 8192, NULL, 3, &AlarmOn_Task_Handle);
   }
   if (AlarmOff) {
     Serial.print("Set AlarmOn ");
+    StateTaskAlarmOn = true ;
     xTaskCreate(&AlarmOff_Task, "Alarm_Task", 8192, NULL, 3, &AlarmOff_Task_Handle);
   }
+}
+//===============================================================
+// Funtion GetStateAlarm Form DB
+//===============================================================
+void handleACS712_Calibrate() {
+  Serial.print("ACS712 Calibrate...");
+  Serial.println(Sensor.ACS712_Calibrate());
 }
 //===============================================================
 // Setup
@@ -322,6 +341,7 @@ void Webserver_Task(void *p) {
   server.on("/setTimer1OffMin",   handleTimer1OffMin); // get From Sever
   server.on("/setResetTimer",     handleResetTimer); // get From Sever
   server.on("/getDataDB", GetDataDB); // get From DB
+  server.on("/setACS712_Calibrate",   handleACS712_Calibrate); // get From Sever
   server.begin();                  //Start server
   Serial.println("HTTP server started");
   while (1) {
@@ -333,14 +353,14 @@ void Webserver_Task(void *p) {
 // ReadAsc712_Task
 //===============================================================
 void ReadAsc712_Task(void *p) {
-  ACS712 Sensor(A0);
   Serial.println("Start ReadAsc712 Task");
   Serial.print("ACS712 Calibrate...");
   Serial.println(Sensor.ACS712_Calibrate());
   while (1) {
-    Amp = String(Sensor.GetCurrent());
-
-    vTaskDelay(1000);
+    Amp_Double = Sensor.GetCurrent();
+    Amp_String = String(Amp_Double);
+    Watt = String(Sensor.GetWatt(Amp_Double));
+    vTaskDelay(3000);
   }
 }
 

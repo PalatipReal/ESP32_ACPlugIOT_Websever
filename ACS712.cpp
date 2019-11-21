@@ -24,11 +24,14 @@ double ACS712::GetCurrent() {
   if (val <= 0) {
     val = 0.00 ;
   }
+  else if (val > 20) {
+    val = 20.00 ;
+  }
   return val ;
 }
 
-double ACS712::GetWatt(double P) {
-  double W = P * GetCurrent() ;
+double ACS712::GetWatt(double I) {
+  double W = 220.0 * I ;
   return W ;
 }
 
